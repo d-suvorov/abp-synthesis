@@ -1,0 +1,51 @@
+MODULE main
+VAR
+  sndr: simple_sender;
+  fwdc: forward_channel(sndr.p0, sndr.p1);
+    
+MODULE simple_sender
+VAR
+  p0: boolean;
+  p1: boolean;
+ASSIGN
+  init(p0) := TRUE;
+  next(p0) := FALSE union TRUE;
+
+  p1 := !p0;
+JUSTICE
+  p0;
+JUSTICE
+  p1;
+
+MODULE forward_channel(p0, p1)
+VAR
+  state : {empty, stored0, stored1, release0, release1};
+  pp0   : boolean;
+  pp1   : boolean;
+ASSIGN
+  init(state) := empty;
+  next(state) := case
+                   state = empty & p0 : {empty, stored0};
+                   state = empty & p1 : {empty, stored1};
+                   state = stored0 : {stored0, release0};
+                   state = stored1 : {stored1, release1};
+                   state = release0 : empty;
+                   state = release1 : empty;
+                   TRUE : state;
+                 esac;
+
+  init(pp0) := FALSE;
+  next(pp0) := case
+                 state = stored0 : TRUE;
+                 state = release0 : FALSE;
+                 TRUE : pp0;
+               esac;
+               
+  init(pp1) := FALSE;
+  next(pp1) := case
+                 state = stored1 : TRUE;
+                 state = release1 : FALSE;
+                 TRUE : pp1;
+               esac;
+JUSTICE
+  state = stored0 | state = stored1;
