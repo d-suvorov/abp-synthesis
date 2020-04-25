@@ -1,8 +1,24 @@
 MODULE main
 VAR
-  sndr: simple_sender;
-  fwdc: forward_channel(sndr.p0, sndr.p1);
-    
+  REQ: boolean;
+  tmr: timer;
+  sndr: sender(REQ, bwdc.o0, bwdc.o1, tmr.timeout);
+  fwdc: channel(sndr.p0, sndr.p1);
+  rcvr: receiver(fwdc.o0, fwdc.o1);
+  bwdc: channel(rcvr.a0, rcvr.a1);
+ASSIGN
+  REQ := TRUE;
+
+MODULE timer
+VAR
+  timeout: boolean;
+ASSIGN
+  init(timeout) := FALSE;
+  next(timeout) := case
+                     !timeout : FALSE union TRUE;
+                     timeout : FALSE;
+                   esac;
+  
 MODULE simple_sender
 VAR
   p0: boolean;
@@ -17,16 +33,86 @@ JUSTICE
 JUSTICE
   p1;
 
-MODULE forward_channel(p0, p1)
+MODULE sender(REQ, a0, a1, timeout)
+VAR
+  _state : {s1, s2, s3, s4, s5, s6, s7};
+  send : boolean;
+  p0 : boolean;
+  p1 : boolean;
+  done : boolean;
+ASSIGN
+  init(_state) := s1;
+  next(_state) := case
+                    _state=s1 & REQ : s2;
+                    _state=s2 & REQ : s3;
+                    _state=s3 & timeout : s3;
+                    _state=s3 & a0 : s4;
+                    _state=s4 & REQ : s5;
+                    _state=s5 & REQ : s6;
+                    _state=s6 & a1 : s7;
+                    _state=s6 & timeout : s6;
+                    _state=s7 & REQ : s2;
+                    TRUE : _state;
+                  esac;
+                  
+  init(send) := FALSE;
+  next(send) := case
+                  _state=s1 & REQ : TRUE;
+                  _state=s4 & REQ : TRUE;
+                  _state=s7 & REQ : TRUE;
+                  TRUE : FALSE;
+                esac;
+                
+  init(p0) := FALSE;
+  next(p0) := case
+                _state=s2 & REQ : TRUE;
+                _state=s3 & timeout : TRUE;
+                TRUE : FALSE;
+              esac;
+              
+  init(p1) := FALSE;
+  next(p1) := case
+                _state=s5 & REQ : TRUE;
+                _state=s6 & timeout : TRUE;
+                TRUE : FALSE;
+              esac;
+              
+  init(done) := FALSE;
+  next(done) := case
+                  _state=s3 & a0 : TRUE;
+                  _state=s6 & a1 : TRUE;
+                  TRUE : FALSE;
+                esac;
+
+MODULE receiver(p0, p1)
+VAR
+  a0: boolean;
+  a1: boolean;
+ASSIGN
+  init(a0) := FALSE;
+  next(a0) := case
+                p0 : TRUE;
+                p1 : FALSE;
+                TRUE: a0;
+              esac;
+
+  init(a1) := FALSE;
+  next(a1) := case
+                p0: FALSE;
+                p1: TRUE;
+                TRUE: a1;
+              esac;
+
+MODULE channel(i0, i1)
 VAR
   state : {empty, stored0, stored1, release0, release1};
-  pp0   : boolean;
-  pp1   : boolean;
+  o0 : boolean;
+  o1 : boolean;
 ASSIGN
   init(state) := empty;
   next(state) := case
-                   state = empty & p0 : {empty, stored0};
-                   state = empty & p1 : {empty, stored1};
+                   state = empty & i0 : {empty, stored0};
+                   state = empty & i1 : {empty, stored1};
                    state = stored0 : {stored0, release0};
                    state = stored1 : {stored1, release1};
                    state = release0 : empty;
@@ -34,18 +120,18 @@ ASSIGN
                    TRUE : state;
                  esac;
 
-  init(pp0) := FALSE;
-  next(pp0) := case
-                 state = stored0 : TRUE;
-                 state = release0 : FALSE;
-                 TRUE : pp0;
-               esac;
-               
-  init(pp1) := FALSE;
-  next(pp1) := case
-                 state = stored1 : TRUE;
-                 state = release1 : FALSE;
-                 TRUE : pp1;
-               esac;
+  init(o0) := FALSE;
+  next(o0) := case
+                state = stored0 : TRUE;
+                state = release0 : FALSE;
+                TRUE : o0;
+              esac;
+              
+  init(o1) := FALSE;
+  next(o1) := case
+                state = stored1 : TRUE;
+                state = release1 : FALSE;
+                TRUE : o1;
+              esac;
 JUSTICE
   state = stored0 | state = stored1;
