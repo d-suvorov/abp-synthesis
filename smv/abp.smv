@@ -9,6 +9,26 @@ VAR
 ASSIGN
   REQ := TRUE;
 
+-- Safety
+  
+-- `send` and `deliver` occur in the right order
+LTLSPEC
+  -- `deliver` can only happen after `send`
+  -- sndr.send R !rcvr.deliver
+  !(!sndr.send U rcvr.deliver)
+LTLSPEC
+  -- two `send`s cannot occur in a row without a `deliver` in between
+  G (sndr.send -> X !(!rcvr.deliver U sndr.send))
+  
+-- `deliver` and `done` occur in the right order
+LTLSPEC
+  -- `done` can only happen after `deliver`
+  -- rcvr.deliver R !sndr.done
+  !(!rcvr.deliver U sndr.done)
+LTLSPEC
+  -- two `deliver`s cannot occur in a row without a `done` in between
+  G (rcvr.deliver -> X !(!sndr.done U rcvr.deliver))
+
 MODULE timer
 VAR
   timeout: boolean;
@@ -84,24 +104,68 @@ ASSIGN
                   TRUE : FALSE;
                 esac;
 
-MODULE receiver(p0, p1)
+MODULE simple_receiver(p0, p1)
 VAR
   a0: boolean;
   a1: boolean;
+  deliver: boolean;
 ASSIGN
   init(a0) := FALSE;
   next(a0) := case
                 p0 : TRUE;
                 p1 : FALSE;
-                TRUE: a0;
+                TRUE: FALSE;
               esac;
 
   init(a1) := FALSE;
   next(a1) := case
                 p0: FALSE;
                 p1: TRUE;
-                TRUE: a1;
+                TRUE: FALSE;
               esac;
+
+  deliver := a0 | a1;
+
+MODULE receiver(p0, p1)
+VAR
+  state: {s0, s1, s2, s3};
+  a0: boolean;
+  a1: boolean;
+  deliver: boolean;
+ASSIGN
+  init(state) := s0;
+  next(state) := case
+                   state = s0 & p0 : s1;
+                   state = s0 & p1 : s0;
+                   state = s1 & p0 : s2;
+                   state = s1 & p1 : s3;
+                   state = s2 & p0 : s2;
+                   state = s2 & p1 : s3;
+                   state = s3 & p0 : s1;
+                   state = s3 & p1 : s0;
+                   TRUE : state;
+                 esac;
+
+  init(a0) := FALSE;
+  next(a0) := case
+                p0 : TRUE;
+                TRUE : FALSE;
+              esac;
+
+  init(a1) := FALSE;
+  next(a1) := case
+                p1 : TRUE;
+                TRUE : FALSE;
+              esac;
+
+  init(deliver) := FALSE;
+  next(deliver) := case
+                     state = s0 & p0 : TRUE;
+                     state = s1 & p1 : TRUE;
+                     state = s2 & p1 : TRUE;
+                     state = s3 & p0 : TRUE;
+                     TRUE : FALSE;
+                   esac;
 
 MODULE channel(i0, i1)
 VAR
