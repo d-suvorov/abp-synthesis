@@ -10,7 +10,7 @@ ASSIGN
   REQ := TRUE;
 
 -- Safety
-  
+
 -- `send` and `deliver` occur in the right order
 LTLSPEC
   -- `deliver` can only happen after `send`
@@ -19,7 +19,7 @@ LTLSPEC
 LTLSPEC
   -- two `send`s cannot occur in a row without a `deliver` in between
   G (sndr.send -> X !(!rcvr.deliver U sndr.send))
-  
+
 -- `deliver` and `done` occur in the right order
 LTLSPEC
   -- `done` can only happen after `deliver`
@@ -28,6 +28,17 @@ LTLSPEC
 LTLSPEC
   -- two `deliver`s cannot occur in a row without a `done` in between
   G (rcvr.deliver -> X !(!sndr.done U rcvr.deliver))
+
+-- Liveness
+
+LTLSPEC
+  G (sndr.send -> F rcvr.deliver)
+
+LTLSPEC
+  G (sndr.send -> F sndr.done)
+
+LTLSPEC
+  G F sndr.send
 
 MODULE timer
 VAR
@@ -38,7 +49,7 @@ ASSIGN
                      !timeout : FALSE union TRUE;
                      timeout : FALSE;
                    esac;
-  
+
 MODULE simple_sender
 VAR
   p0: boolean;
@@ -74,7 +85,7 @@ ASSIGN
                     _state=s7 & REQ : s2;
                     TRUE : _state;
                   esac;
-                  
+
   init(send) := FALSE;
   next(send) := case
                   _state=s1 & REQ : TRUE;
@@ -82,21 +93,21 @@ ASSIGN
                   _state=s7 & REQ : TRUE;
                   TRUE : FALSE;
                 esac;
-                
+
   init(p0) := FALSE;
   next(p0) := case
                 _state=s2 & REQ : TRUE;
                 _state=s3 & timeout : TRUE;
                 TRUE : FALSE;
               esac;
-              
+
   init(p1) := FALSE;
   next(p1) := case
                 _state=s5 & REQ : TRUE;
                 _state=s6 & timeout : TRUE;
                 TRUE : FALSE;
               esac;
-              
+
   init(done) := FALSE;
   next(done) := case
                   _state=s3 & a0 : TRUE;
@@ -190,7 +201,7 @@ ASSIGN
                 state = release0 : FALSE;
                 TRUE : o0;
               esac;
-              
+
   init(o1) := FALSE;
   next(o1) := case
                 state = stored1 : TRUE;
@@ -198,4 +209,6 @@ ASSIGN
                 TRUE : o1;
               esac;
 JUSTICE
-  state = stored0 | state = stored1;
+  state = stored0
+JUSTICE
+  state = stored1;
