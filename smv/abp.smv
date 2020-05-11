@@ -4,7 +4,7 @@ VAR
   tmr: timer;
   sndr: sender(REQ, bwdc.o0, bwdc.o1, tmr.timeout);
   fwdc: channel(sndr.p0, sndr.p1);
-  rcvr: receiver(fwdc.o0, fwdc.o1);
+  rcvr: receiver(REQ, fwdc.o0, fwdc.o1);
   bwdc: channel(rcvr.a0, rcvr.a1);
 ASSIGN
   REQ := TRUE;
@@ -137,7 +137,7 @@ ASSIGN
 
   deliver := a0 | a1;
 
-MODULE receiver(p0, p1)
+MODULE receiver_multioutput(p0, p1)
 VAR
   state: {s0, s1, s2, s3};
   a0: boolean;
@@ -175,6 +175,53 @@ ASSIGN
                      state = s1 & p1 : TRUE;
                      state = s2 & p1 : TRUE;
                      state = s3 & p0 : TRUE;
+                     TRUE : FALSE;
+                   esac;
+
+MODULE receiver(REQ, p0, p1)
+VAR
+  state: {s0, s10, s11, s2, s30, s31};
+  a0: boolean;
+  a1: boolean;
+  deliver: boolean;
+ASSIGN
+  init(state) := s0;
+  next(state) := case
+                   state = s0 & p0 : s10;
+                   state = s0 & p1 : s0;
+                   state = s11 & p0 : s2;
+                   state = s11 & p1 : s30;
+                   state = s2 & p0 : s2;
+                   state = s2 & p1 : s30;
+                   state = s31 & p0 : s10;
+                   state = s31 & p1 : s0;
+                   state = s10 & REQ : s11;
+                   state = s30 & REQ : s31;
+                   TRUE : state;
+                 esac;
+
+  init(a0) := FALSE;
+  next(a0) := case
+                state = s10 & REQ : TRUE;
+                state = s11 & p0 : TRUE;
+                state = s2 & p0 : TRUE;
+                TRUE : FALSE;
+              esac;
+
+  init(a1) := FALSE;
+  next(a1) := case
+                state = s30 & REQ : TRUE;
+                state = s31 & p1 : TRUE;
+                state = s4 & p1 : TRUE;
+                TRUE : FALSE;
+              esac;
+
+  init(deliver) := FALSE;
+  next(deliver) := case
+                     state = s0 & p0 : TRUE;
+                     state = s11 & p1 : TRUE;
+                     state = s2 & p1 : TRUE;
+                     state = s31 & p0 : TRUE;
                      TRUE : FALSE;
                    esac;
 
