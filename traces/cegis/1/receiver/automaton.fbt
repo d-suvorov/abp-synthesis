@@ -1,0 +1,83 @@
+<FBType Name="automaton" Namespace="Main">
+	<Identification Standard="61499-2"/>
+	<VersionInfo Organization="nxtControl GmbH" Version="0.0" Author="fbSAT" Date="2020-05-11"/>
+	<InterfaceList>
+		<EventInputs>
+			<Event Name="INIT"/>
+			<Event Name="p0">
+				<With Var="x"/>
+			</Event>
+			<Event Name="REQ">
+				<With Var="x"/>
+			</Event>
+			<Event Name="p1">
+				<With Var="x"/>
+			</Event>
+		</EventInputs>
+		<EventOutputs>
+			<Event Name="deliver">
+				<With Var="y"/>
+			</Event>
+			<Event Name="a0">
+				<With Var="y"/>
+			</Event>
+			<Event Name="a1">
+				<With Var="y"/>
+			</Event>
+			<Event Name="INITO">
+				<With Var="y"/>
+			</Event>
+		</EventOutputs>
+		<InputVars>
+			<VarDeclaration Name="x" Type="BOOL"/>
+		</InputVars>
+		<OutputVars>
+			<VarDeclaration Name="y" Type="BOOL"/>
+		</OutputVars>
+	</InterfaceList>
+	<BasicFB>
+		<ECC>
+			<ECState Name="START" x="456.797" y="307.316"/>
+			<ECState Name="INIT" x="813.003" y="889.463">
+				<ECAction Algorithm="INIT" Output="INITO"/>
+			</ECState>
+			<ECState Name="s1" x="953.546" y="36.548">
+				<ECAction Algorithm="s1_0_0"/>
+			</ECState>
+			<ECState Name="s2" x="137.424" y="284.703">
+				<ECAction Algorithm="s2_0_0" Output="deliver"/>
+			</ECState>
+			<ECState Name="s3" x="424.583" y="275.279">
+				<ECAction Algorithm="s3_0_0" Output="a0"/>
+			</ECState>
+			<ECState Name="s4" x="657.839" y="382.715">
+				<ECAction Algorithm="s4_0_0" Output="deliver"/>
+			</ECState>
+			<ECState Name="s5" x="245.965" y="8.983">
+				<ECAction Algorithm="s5_0_0" Output="a1"/>
+			</ECState>
+			<ECTransition Source="START" Destination="INIT" Condition="INIT" x="717.895" y="743.341"/>
+			<ECTransition Source="INIT" Destination="s1" Condition="1" x="681.396" y="143.357"/>
+			<ECTransition Source="s1" Destination="s2" Condition="p0&amp;NOT x" x="657.647" y="499.176"/>
+			<ECTransition Source="s2" Destination="s3" Condition="REQ&amp;NOT x" x="920.500" y="213.928"/>
+			<ECTransition Source="s3" Destination="s4" Condition="p1&amp;NOT x" x="570.836" y="828.125"/>
+			<ECTransition Source="s4" Destination="s5" Condition="REQ&amp;NOT x" x="417.071" y="785.899"/>
+			<ECTransition Source="s5" Destination="s2" Condition="p0&amp;NOT x" x="970.563" y="295.171"/>
+		</ECC>
+		<Algorithm Name="INIT">
+			<ST Text="y:=FALSE;"/>
+		</Algorithm>
+		<Algorithm Name="s2_0_0">
+			<ST Text="y:=FALSE;"/>
+		</Algorithm>
+		<Algorithm Name="s3_0_0">
+			<ST Text="y:=FALSE;"/>
+		</Algorithm>
+		<Algorithm Name="s4_0_0">
+			<ST Text="y:=FALSE;"/>
+		</Algorithm>
+		<Algorithm Name="s5_0_0">
+			<ST Text="y:=FALSE;"/>
+		</Algorithm>
+	</BasicFB>
+</FBType>

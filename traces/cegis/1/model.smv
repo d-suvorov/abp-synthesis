@@ -1,0 +1,209 @@
+MODULE main
+VAR
+  PHONY: boolean;
+  REQ: boolean;
+  tmr: timer;
+  sndr: sender(REQ, bwdc.o0, bwdc.o1, tmr.timeout, PHONY);
+  fwdc: channel(sndr.p0, sndr.p1);
+  rcvr: receiver(REQ, fwdc.o0, fwdc.o1, PHONY);
+  bwdc: channel(rcvr.a0, rcvr.a1);
+ASSIGN
+  REQ := TRUE;
+
+-- Safety
+
+-- `send` and `deliver` occur in the right order
+LTLSPEC
+  -- `deliver` can only happen after `send`
+  -- sndr.send R !rcvr.deliver
+  !(!sndr.send U rcvr.deliver)
+LTLSPEC
+  -- two `send`s cannot occur in a row without a `deliver` in between
+  G (sndr.send -> X !(!rcvr.deliver U sndr.send))
+
+-- `deliver` and `done` occur in the right order
+LTLSPEC
+  -- `done` can only happen after `deliver`
+  -- rcvr.deliver R !sndr.done
+  !(!rcvr.deliver U sndr.done)
+LTLSPEC
+  -- two `deliver`s cannot occur in a row without a `done` in between
+  G (rcvr.deliver -> X !(!sndr.done U rcvr.deliver))
+
+-- Liveness
+
+LTLSPEC
+  G (sndr.send -> F rcvr.deliver)
+
+LTLSPEC
+  G (sndr.send -> F sndr.done)
+
+LTLSPEC
+  G F sndr.send
+
+MODULE timer
+VAR
+  timeout: boolean;
+ASSIGN
+  init(timeout) := FALSE;
+  next(timeout) := case
+                     !timeout : FALSE union TRUE;
+                     timeout : FALSE;
+                   esac;
+
+MODULE channel(i0, i1)
+VAR
+  state : {empty, stored0, stored1, release0, release1};
+  o0 : boolean;
+  o1 : boolean;
+ASSIGN
+  init(state) := empty;
+  next(state) := case
+                   state = empty & i0 : {empty, stored0};
+                   state = empty & i1 : {empty, stored1};
+                   state = stored0 : {stored0, release0};
+                   state = stored1 : {stored1, release1};
+                   state = release0 : empty;
+                   state = release1 : empty;
+                   TRUE : state;
+                 esac;
+
+  init(o0) := FALSE;
+  next(o0) := case
+                state = stored0 : TRUE;
+                state = release0 : FALSE;
+                TRUE : o0;
+              esac;
+
+  init(o1) := FALSE;
+  next(o1) := case
+                state = stored1 : TRUE;
+                state = release1 : FALSE;
+                TRUE : o1;
+              esac;
+JUSTICE
+  state = stored0
+JUSTICE
+  state = stored1;
+MODULE sender(req,timeout,a0,a1, x)
+VAR
+    _state : {s1, s2, s3, s4, s5, s6, s7};
+    send : boolean;
+    p0 : boolean;
+    done : boolean;
+    p1 : boolean;
+    y : boolean;
+ASSIGN
+    init(_state) := s1;
+    next(_state) := case
+        _state=s1 & req & (!x) : s2;
+        _state=s2 & req & (!x) : s3;
+        _state=s3 & a0 & (!x) : s4;
+        _state=s3 & timeout & (!x) : s3;
+        _state=s4 & req & (!x) : s5;
+        _state=s5 & req & (!x) : s6;
+        _state=s6 & a1 & (!x) : s7;
+        _state=s7 & req & (!x) : s2;
+        TRUE : _state;
+    esac;
+    
+    init(send) := FALSE;
+    next(send) := case
+        _state=s1 & req & (!x) : TRUE;
+        _state=s4 & req & (!x) : TRUE;
+        _state=s7 & req & (!x) : TRUE;
+        TRUE : FALSE;
+    esac;
+    
+    init(p0) := FALSE;
+    next(p0) := case
+        _state=s2 & req & (!x) : TRUE;
+        _state=s3 & timeout & (!x) : TRUE;
+        TRUE : FALSE;
+    esac;
+    
+    init(done) := FALSE;
+    next(done) := case
+        _state=s3 & a0 & (!x) : TRUE;
+        _state=s6 & a1 & (!x) : TRUE;
+        TRUE : FALSE;
+    esac;
+    
+    init(p1) := FALSE;
+    next(p1) := case
+        _state=s5 & req & (!x) : TRUE;
+        TRUE : FALSE;
+    esac;
+    
+    init(y) := FALSE;
+    next(y) := case
+        _state=s1 & req & (!x) & !y : FALSE;
+        _state=s1 & req & (!x) & y : FALSE;
+        _state=s2 & req & (!x) & !y : FALSE;
+        _state=s2 & req & (!x) & y : FALSE;
+        _state=s3 & a0 & (!x) & !y : FALSE;
+        _state=s3 & a0 & (!x) & y : FALSE;
+        _state=s3 & timeout & (!x) & !y : FALSE;
+        _state=s3 & timeout & (!x) & y : FALSE;
+        _state=s4 & req & (!x) & !y : FALSE;
+        _state=s4 & req & (!x) & y : FALSE;
+        _state=s5 & req & (!x) & !y : FALSE;
+        _state=s5 & req & (!x) & y : FALSE;
+        _state=s6 & a1 & (!x) & !y : FALSE;
+        _state=s6 & a1 & (!x) & y : FALSE;
+        _state=s7 & req & (!x) & !y : FALSE;
+        _state=s7 & req & (!x) & y : FALSE;
+        TRUE : y;
+    esac;
+MODULE receiver(p0,REQ,p1, x)
+VAR
+    _state : {s1, s2, s3, s4, s5};
+    deliver : boolean;
+    a0 : boolean;
+    a1 : boolean;
+    y : boolean;
+ASSIGN
+    init(_state) := s1;
+    next(_state) := case
+        _state=s1 & p0 & (!x) : s2;
+        _state=s2 & REQ & (!x) : s3;
+        _state=s3 & p1 & (!x) : s4;
+        _state=s4 & REQ & (!x) : s5;
+        _state=s5 & p0 & (!x) : s2;
+        TRUE : _state;
+    esac;
+    
+    init(deliver) := FALSE;
+    next(deliver) := case
+        _state=s1 & p0 & (!x) : TRUE;
+        _state=s3 & p1 & (!x) : TRUE;
+        _state=s5 & p0 & (!x) : TRUE;
+        TRUE : FALSE;
+    esac;
+    
+    init(a0) := FALSE;
+    next(a0) := case
+        _state=s2 & REQ & (!x) : TRUE;
+        TRUE : FALSE;
+    esac;
+    
+    init(a1) := FALSE;
+    next(a1) := case
+        _state=s4 & REQ & (!x) : TRUE;
+        TRUE : FALSE;
+    esac;
+    
+    init(y) := FALSE;
+    next(y) := case
+        _state=s1 & p0 & (!x) & !y : FALSE;
+        _state=s1 & p0 & (!x) & y : FALSE;
+        _state=s2 & REQ & (!x) & !y : FALSE;
+        _state=s2 & REQ & (!x) & y : FALSE;
+        _state=s3 & p1 & (!x) & !y : FALSE;
+        _state=s3 & p1 & (!x) & y : FALSE;
+        _state=s4 & REQ & (!x) & !y : FALSE;
+        _state=s4 & REQ & (!x) & y : FALSE;
+        _state=s5 & p0 & (!x) & !y : FALSE;
+        _state=s5 & p0 & (!x) & y : FALSE;
+        TRUE : y;
+    esac;

@@ -1,0 +1,104 @@
+<FBType Name="automaton" Namespace="Main">
+	<Identification Standard="61499-2"/>
+	<VersionInfo Organization="nxtControl GmbH" Version="0.0" Author="fbSAT" Date="2020-05-11"/>
+	<InterfaceList>
+		<EventInputs>
+			<Event Name="INIT"/>
+			<Event Name="req">
+				<With Var="x"/>
+			</Event>
+			<Event Name="timeout">
+				<With Var="x"/>
+			</Event>
+			<Event Name="a0">
+				<With Var="x"/>
+			</Event>
+			<Event Name="a1">
+				<With Var="x"/>
+			</Event>
+		</EventInputs>
+		<EventOutputs>
+			<Event Name="send">
+				<With Var="y"/>
+			</Event>
+			<Event Name="p0">
+				<With Var="y"/>
+			</Event>
+			<Event Name="done">
+				<With Var="y"/>
+			</Event>
+			<Event Name="p1">
+				<With Var="y"/>
+			</Event>
+			<Event Name="INITO">
+				<With Var="y"/>
+			</Event>
+		</EventOutputs>
+		<InputVars>
+			<VarDeclaration Name="x" Type="BOOL"/>
+		</InputVars>
+		<OutputVars>
+			<VarDeclaration Name="y" Type="BOOL"/>
+		</OutputVars>
+	</InterfaceList>
+	<BasicFB>
+		<ECC>
+			<ECState Name="START" x="837.022" y="242.688"/>
+			<ECState Name="INIT" x="587.859" y="530.115">
+				<ECAction Algorithm="INIT" Output="INITO"/>
+			</ECState>
+			<ECState Name="s1" x="400.585" y="643.815">
+				<ECAction Algorithm="s1_0_0"/>
+			</ECState>
+			<ECState Name="s2" x="625.114" y="27.341">
+				<ECAction Algorithm="s2_0_0" Output="send"/>
+			</ECState>
+			<ECState Name="s3" x="174.089" y="116.696">
+				<ECAction Algorithm="s3_0_0" Output="p0"/>
+			</ECState>
+			<ECState Name="s4" x="683.625" y="281.284">
+				<ECAction Algorithm="s4_0_0" Output="done"/>
+			</ECState>
+			<ECState Name="s5" x="808.221" y="148.819">
+				<ECAction Algorithm="s5_0_0" Output="send"/>
+			</ECState>
+			<ECState Name="s6" x="691.452" y="692.658">
+				<ECAction Algorithm="s6_0_0" Output="p1"/>
+			</ECState>
+			<ECState Name="s7" x="687.382" y="766.389">
+				<ECAction Algorithm="s7_0_0" Output="done"/>
+			</ECState>
+			<ECTransition Source="START" Destination="INIT" Condition="INIT" x="254.409" y="622.029"/>
+			<ECTransition Source="INIT" Destination="s1" Condition="1" x="235.229" y="30.932"/>
+			<ECTransition Source="s1" Destination="s2" Condition="req&amp;NOT x" x="956.037" y="151.348"/>
+			<ECTransition Source="s2" Destination="s3" Condition="req&amp;NOT x" x="487.698" y="758.570"/>
+			<ECTransition Source="s3" Destination="s4" Condition="a0&amp;NOT x" x="187.667" y="209.287"/>
+			<ECTransition Source="s3" Destination="s3" Condition="timeout&amp;NOT x" x="596.998" y="979.990"/>
+			<ECTransition Source="s4" Destination="s5" Condition="req&amp;NOT x" x="666.363" y="708.619"/>
+			<ECTransition Source="s5" Destination="s6" Condition="req&amp;NOT x" x="258.202" y="604.177"/>
+			<ECTransition Source="s6" Destination="s7" Condition="a1&amp;NOT x" x="332.533" y="397.886"/>
+			<ECTransition Source="s7" Destination="s2" Condition="req&amp;NOT x" x="748.535" y="661.003"/>
+		</ECC>
+		<Algorithm Name="INIT">
+			<ST Text="y:=FALSE;"/>
+		</Algorithm>
+		<Algorithm Name="s2_0_0">
+			<ST Text="y:=FALSE;"/>
+		</Algorithm>
+		<Algorithm Name="s3_0_0">
+			<ST Text="y:=FALSE;"/>
+		</Algorithm>
+		<Algorithm Name="s4_0_0">
+			<ST Text="y:=FALSE;"/>
+		</Algorithm>
+		<Algorithm Name="s5_0_0">
+			<ST Text="y:=FALSE;"/>
+		</Algorithm>
+		<Algorithm Name="s6_0_0">
+			<ST Text="y:=FALSE;"/>
+		</Algorithm>
+		<Algorithm Name="s7_0_0">
+			<ST Text="y:=FALSE;"/>
+		</Algorithm>
+	</BasicFB>
+</FBType>

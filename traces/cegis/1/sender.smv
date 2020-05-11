@@ -1,0 +1,70 @@
+MODULE sender(req,timeout,a0,a1, x)
+VAR
+    _state : {s1, s2, s3, s4, s5, s6, s7};
+    send : boolean;
+    p0 : boolean;
+    done : boolean;
+    p1 : boolean;
+    y : boolean;
+ASSIGN
+    init(_state) := s1;
+    next(_state) := case
+        _state=s1 & req & (!x) : s2;
+        _state=s2 & req & (!x) : s3;
+        _state=s3 & a0 & (!x) : s4;
+        _state=s3 & timeout & (!x) : s3;
+        _state=s4 & req & (!x) : s5;
+        _state=s5 & req & (!x) : s6;
+        _state=s6 & a1 & (!x) : s7;
+        _state=s7 & req & (!x) : s2;
+        TRUE : _state;
+    esac;
+    
+    init(send) := FALSE;
+    next(send) := case
+        _state=s1 & req & (!x) : TRUE;
+        _state=s4 & req & (!x) : TRUE;
+        _state=s7 & req & (!x) : TRUE;
+        TRUE : FALSE;
+    esac;
+    
+    init(p0) := FALSE;
+    next(p0) := case
+        _state=s2 & req & (!x) : TRUE;
+        _state=s3 & timeout & (!x) : TRUE;
+        TRUE : FALSE;
+    esac;
+    
+    init(done) := FALSE;
+    next(done) := case
+        _state=s3 & a0 & (!x) : TRUE;
+        _state=s6 & a1 & (!x) : TRUE;
+        TRUE : FALSE;
+    esac;
+    
+    init(p1) := FALSE;
+    next(p1) := case
+        _state=s5 & req & (!x) : TRUE;
+        TRUE : FALSE;
+    esac;
+    
+    init(y) := FALSE;
+    next(y) := case
+        _state=s1 & req & (!x) & !y : FALSE;
+        _state=s1 & req & (!x) & y : FALSE;
+        _state=s2 & req & (!x) & !y : FALSE;
+        _state=s2 & req & (!x) & y : FALSE;
+        _state=s3 & a0 & (!x) & !y : FALSE;
+        _state=s3 & a0 & (!x) & y : FALSE;
+        _state=s3 & timeout & (!x) & !y : FALSE;
+        _state=s3 & timeout & (!x) & y : FALSE;
+        _state=s4 & req & (!x) & !y : FALSE;
+        _state=s4 & req & (!x) & y : FALSE;
+        _state=s5 & req & (!x) & !y : FALSE;
+        _state=s5 & req & (!x) & y : FALSE;
+        _state=s6 & a1 & (!x) & !y : FALSE;
+        _state=s6 & a1 & (!x) & y : FALSE;
+        _state=s7 & req & (!x) & !y : FALSE;
+        _state=s7 & req & (!x) & y : FALSE;
+        TRUE : y;
+    esac;

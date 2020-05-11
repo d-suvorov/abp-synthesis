@@ -1,0 +1,8 @@
+#!/bin/bash
+
+cp sender/automaton.smv sender.smv
+sed -i 's/CONTROL/sender/g' sender.smv
+cp receiver/automaton.smv receiver.smv
+sed -i 's/CONTROL/receiver/g' receiver.smv
+cat ../../../smv/env.smv sender.smv receiver.smv > model.smv
+NuSMV model.smv

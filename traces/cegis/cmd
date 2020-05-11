@@ -1,0 +1,3 @@
+./fbsat -i ~/projects/abp-protocol-synthesis/traces/cegis/sender-1 --input-names ~/projects/abp-protocol-synthesis/traces/input-names --output-names ~/projects/abp-protocol-synthesis/traces/output-names -o ~/projects/abp-protocol-synthesis/traces/cegis/1/sender/ -m extended-min -P 3
+
+./fbsat -i ~/projects/abp-protocol-synthesis/traces/cegis/receiver-1 --input-names ~/projects/abp-protocol-synthesis/traces/input-names --output-names ~/projects/abp-protocol-synthesis/traces/output-names -o ~/projects/abp-protocol-synthesis/traces/cegis/1/receiver/ -m extended-min -P 3
