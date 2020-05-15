@@ -1,10 +1,10 @@
 <FBType Name="automaton" Namespace="Main">
 	<Identification Standard="61499-2"/>
-	<VersionInfo Organization="nxtControl GmbH" Version="0.0" Author="fbSAT" Date="2020-05-11"/>
+	<VersionInfo Organization="nxtControl GmbH" Version="0.0" Author="fbSAT" Date="2020-05-15"/>
 	<InterfaceList>
 		<EventInputs>
 			<Event Name="INIT"/>
-			<Event Name="req">
+			<Event Name="REQ">
 				<With Var="x"/>
 			</Event>
 			<Event Name="timeout">
@@ -43,41 +43,41 @@
 	</InterfaceList>
 	<BasicFB>
 		<ECC>
-			<ECState Name="START" x="837.022" y="242.688"/>
-			<ECState Name="INIT" x="587.859" y="530.115">
+			<ECState Name="START" x="139.174" y="288.409"/>
+			<ECState Name="INIT" x="647.376" y="48.670">
 				<ECAction Algorithm="INIT" Output="INITO"/>
 			</ECState>
-			<ECState Name="s1" x="400.585" y="643.815">
+			<ECState Name="s1" x="676.704" y="322.178">
 				<ECAction Algorithm="s1_0_0"/>
 			</ECState>
-			<ECState Name="s2" x="625.114" y="27.341">
+			<ECState Name="s2" x="740.264" y="702.421">
 				<ECAction Algorithm="s2_0_0" Output="send"/>
 			</ECState>
-			<ECState Name="s3" x="174.089" y="116.696">
+			<ECState Name="s3" x="248.314" y="915.740">
 				<ECAction Algorithm="s3_0_0" Output="p0"/>
 			</ECState>
-			<ECState Name="s4" x="683.625" y="281.284">
+			<ECState Name="s4" x="114.099" y="169.775">
 				<ECAction Algorithm="s4_0_0" Output="done"/>
 			</ECState>
-			<ECState Name="s5" x="808.221" y="148.819">
+			<ECState Name="s5" x="749.788" y="196.305">
 				<ECAction Algorithm="s5_0_0" Output="send"/>
 			</ECState>
-			<ECState Name="s6" x="691.452" y="692.658">
+			<ECState Name="s6" x="132.454" y="541.741">
 				<ECAction Algorithm="s6_0_0" Output="p1"/>
 			</ECState>
-			<ECState Name="s7" x="687.382" y="766.389">
+			<ECState Name="s7" x="471.744" y="83.726">
 				<ECAction Algorithm="s7_0_0" Output="done"/>
 			</ECState>
-			<ECTransition Source="START" Destination="INIT" Condition="INIT" x="254.409" y="622.029"/>
-			<ECTransition Source="INIT" Destination="s1" Condition="1" x="235.229" y="30.932"/>
-			<ECTransition Source="s1" Destination="s2" Condition="req&amp;NOT x" x="956.037" y="151.348"/>
-			<ECTransition Source="s2" Destination="s3" Condition="req&amp;NOT x" x="487.698" y="758.570"/>
-			<ECTransition Source="s3" Destination="s4" Condition="a0&amp;NOT x" x="187.667" y="209.287"/>
-			<ECTransition Source="s3" Destination="s3" Condition="timeout&amp;NOT x" x="596.998" y="979.990"/>
-			<ECTransition Source="s4" Destination="s5" Condition="req&amp;NOT x" x="666.363" y="708.619"/>
-			<ECTransition Source="s5" Destination="s6" Condition="req&amp;NOT x" x="258.202" y="604.177"/>
-			<ECTransition Source="s6" Destination="s7" Condition="a1&amp;NOT x" x="332.533" y="397.886"/>
-			<ECTransition Source="s7" Destination="s2" Condition="req&amp;NOT x" x="748.535" y="661.003"/>
+			<ECTransition Source="START" Destination="INIT" Condition="INIT" x="122.160" y="930.802"/>
+			<ECTransition Source="INIT" Destination="s1" Condition="1" x="257.909" y="546.855"/>
+			<ECTransition Source="s1" Destination="s2" Condition="REQ&amp;NOT x" x="991.370" y="870.627"/>
+			<ECTransition Source="s2" Destination="s3" Condition="REQ&amp;NOT x" x="853.316" y="915.369"/>
+			<ECTransition Source="s3" Destination="s4" Condition="a0&amp;NOT x" x="947.137" y="56.807"/>
+			<ECTransition Source="s3" Destination="s3" Condition="timeout&amp;NOT x" x="767.766" y="46.752"/>
+			<ECTransition Source="s4" Destination="s5" Condition="REQ&amp;NOT x" x="616.231" y="850.253"/>
+			<ECTransition Source="s5" Destination="s6" Condition="REQ&amp;NOT x" x="309.587" y="2.755"/>
+			<ECTransition Source="s6" Destination="s7" Condition="a1&amp;NOT x" x="855.645" y="630.633"/>
+			<ECTransition Source="s7" Destination="s2" Condition="REQ&amp;NOT x" x="188.895" y="778.615"/>
 		</ECC>
 		<Algorithm Name="INIT">
 			<ST Text="y:=FALSE;"/>
