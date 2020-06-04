@@ -34,13 +34,13 @@ LTLSPEC
 -- Liveness
 
 LTLSPEC
-  G (sndr.send -> F rcvr.deliver)
+  (G F tmr.timeout) -> (G F fwdc.i0 -> G F fwdc.o0) -> (G F fwdc.i1 -> G F fwdc.o1) -> (G F bwdc.i0 -> G F bwdc.o0) -> (G F bwdc.i1 -> G F bwdc.o1) -> G (sndr.send -> F rcvr.deliver)
 
 LTLSPEC
-  G (sndr.send -> F sndr.done)
+  (G F tmr.timeout) -> (G F fwdc.i0 -> G F fwdc.o0) -> (G F fwdc.i1 -> G F fwdc.o1) -> (G F bwdc.i0 -> G F bwdc.o0) -> (G F bwdc.i1 -> G F bwdc.o1) -> G (sndr.send -> F sndr.done)
 
 LTLSPEC
-  G F sndr.send
+  (G F tmr.timeout) -> (G F fwdc.i0 -> G F fwdc.o0) -> (G F fwdc.i1 -> G F fwdc.o1) -> (G F bwdc.i0 -> G F bwdc.o0) -> (G F bwdc.i1 -> G F bwdc.o1) -> G F sndr.send
 
 MODULE timer
 VAR
@@ -82,10 +82,6 @@ ASSIGN
                 state = release1 : FALSE;
                 TRUE : o1;
               esac;
-JUSTICE
-  state = stored0
-JUSTICE
-  state = stored1;
 MODULE sender(REQ,timeout,a0,a1, x)
 VAR
     _state : {s1, s2, s3, s4, s5, s6, s7};
@@ -156,55 +152,49 @@ ASSIGN
         _state=s7 & REQ & (!x) & y : FALSE;
         TRUE : y;
     esac;
-MODULE receiver(p0,REQ,p1, x)
+MODULE receiver(p0, REQ, p1, x)
 VAR
-    _state : {s1, s2, s3, s4, s5};
-    deliver : boolean;
-    a0 : boolean;
-    a1 : boolean;
-    y : boolean;
+  state: {s0, s10, s11, s2, s30, s31};
+  a0: boolean;
+  a1: boolean;
+  deliver: boolean;
 ASSIGN
-    init(_state) := s1;
-    next(_state) := case
-        _state=s1 & p0 & (!x) : s2;
-        _state=s2 & REQ & (!x) : s3;
-        _state=s3 & p1 & (!x) : s4;
-        _state=s4 & REQ & (!x) : s5;
-        _state=s5 & p0 & (!x) : s2;
-        TRUE : _state;
-    esac;
-    
-    init(deliver) := FALSE;
-    next(deliver) := case
-        _state=s1 & p0 & (!x) : TRUE;
-        _state=s3 & p1 & (!x) : TRUE;
-        _state=s5 & p0 & (!x) : TRUE;
-        TRUE : FALSE;
-    esac;
-    
-    init(a0) := FALSE;
-    next(a0) := case
-        _state=s2 & REQ & (!x) : TRUE;
-        TRUE : FALSE;
-    esac;
-    
-    init(a1) := FALSE;
-    next(a1) := case
-        _state=s4 & REQ & (!x) : TRUE;
-        TRUE : FALSE;
-    esac;
-    
-    init(y) := FALSE;
-    next(y) := case
-        _state=s1 & p0 & (!x) & !y : FALSE;
-        _state=s1 & p0 & (!x) & y : FALSE;
-        _state=s2 & REQ & (!x) & !y : FALSE;
-        _state=s2 & REQ & (!x) & y : FALSE;
-        _state=s3 & p1 & (!x) & !y : FALSE;
-        _state=s3 & p1 & (!x) & y : FALSE;
-        _state=s4 & REQ & (!x) & !y : FALSE;
-        _state=s4 & REQ & (!x) & y : FALSE;
-        _state=s5 & p0 & (!x) & !y : FALSE;
-        _state=s5 & p0 & (!x) & y : FALSE;
-        TRUE : y;
-    esac;
+  init(state) := s0;
+  next(state) := case
+                   state = s0 & p0 : s10;
+                   state = s0 & p1 : s0;
+                   state = s11 & p0 : s2;
+                   state = s11 & p1 : s30;
+                   state = s2 & p0 : s2;
+                   state = s2 & p1 : s30;
+                   state = s31 & p0 : s10;
+                   state = s31 & p1 : s0;
+                   state = s10 & REQ : s11;
+                   state = s30 & REQ : s31;
+                   TRUE : state;
+                 esac;
+
+  init(a0) := FALSE;
+  next(a0) := case
+                state = s10 & REQ : TRUE;
+                state = s11 & p0 : TRUE;
+                state = s2 & p0 : TRUE;
+                TRUE : FALSE;
+              esac;
+
+  init(a1) := FALSE;
+  next(a1) := case
+                state = s30 & REQ : TRUE;
+                state = s31 & p1 : TRUE;
+                state = s0 & p1 : TRUE;
+                TRUE : FALSE;
+              esac;
+
+  init(deliver) := FALSE;
+  next(deliver) := case
+                     state = s0 & p0 : TRUE;
+                     state = s11 & p1 : TRUE;
+                     state = s2 & p1 : TRUE;
+                     state = s31 & p0 : TRUE;
+                     TRUE : FALSE;
+                   esac;
