@@ -32,13 +32,13 @@ LTLSPEC
 -- Liveness
 
 LTLSPEC
-  ((G F fwdc.i0 -> G F fwdc.o0) -> (G F fwdc.i1 -> G F fwdc.o1)) -> ((G F bwdc.i0 -> G F bwdc.o0) -> (G F bwdc.i1 -> G F bwdc.o1)) -> G (sndr.send -> F rcvr.deliver)
+  (G F tmr.timeout) -> (G F fwdc.i0 -> G F fwdc.o0) -> (G F fwdc.i1 -> G F fwdc.o1) -> (G F bwdc.i0 -> G F bwdc.o0) -> (G F bwdc.i1 -> G F bwdc.o1) -> G (sndr.send -> F rcvr.deliver)
 
 LTLSPEC
-  ((G F fwdc.i0 -> G F fwdc.o0) -> (G F fwdc.i1 -> G F fwdc.o1)) -> ((G F bwdc.i0 -> G F bwdc.o0) -> (G F bwdc.i1 -> G F bwdc.o1)) -> G (sndr.send -> F sndr.done)
+  (G F tmr.timeout) -> (G F fwdc.i0 -> G F fwdc.o0) -> (G F fwdc.i1 -> G F fwdc.o1) -> (G F bwdc.i0 -> G F bwdc.o0) -> (G F bwdc.i1 -> G F bwdc.o1) -> G (sndr.send -> F sndr.done)
 
 LTLSPEC
-  ((G F fwdc.i0 -> G F fwdc.o0) -> (G F fwdc.i1 -> G F fwdc.o1)) -> ((G F bwdc.i0 -> G F bwdc.o0) -> (G F bwdc.i1 -> G F bwdc.o1)) -> G F sndr.send
+  (G F tmr.timeout) -> (G F fwdc.i0 -> G F fwdc.o0) -> (G F fwdc.i1 -> G F fwdc.o1) -> (G F bwdc.i0 -> G F bwdc.o0) -> (G F bwdc.i1 -> G F bwdc.o1) -> G F sndr.send
 
 MODULE timer
 VAR
@@ -76,12 +76,12 @@ ASSIGN
   next(_state) := case
                     _state=s1 & REQ : s2;
                     _state=s2 & REQ : s3;
-                    _state=s3 & timeout : s3;
+                    _state=s3 & timeout & !a0 : s3;
                     _state=s3 & a0 : s4;
                     _state=s4 & REQ : s5;
                     _state=s5 & REQ : s6;
                     _state=s6 & a1 : s7;
-                    _state=s6 & timeout : s6;
+                    _state=s6 & timeout & !a1 : s6;
                     _state=s7 & REQ : s2;
                     TRUE : _state;
                   esac;
@@ -97,14 +97,14 @@ ASSIGN
   init(p0) := FALSE;
   next(p0) := case
                 _state=s2 & REQ : TRUE;
-                _state=s3 & timeout : TRUE;
+                _state=s3 & timeout & !a0 : TRUE;
                 TRUE : FALSE;
               esac;
 
   init(p1) := FALSE;
   next(p1) := case
                 _state=s5 & REQ : TRUE;
-                _state=s6 & timeout : TRUE;
+                _state=s6 & timeout & !a1 : TRUE;
                 TRUE : FALSE;
               esac;
 
