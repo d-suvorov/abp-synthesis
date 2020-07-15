@@ -89,19 +89,59 @@ ASSIGN
 
 MODULE receiver(packet, input_bit)
 VAR
+  _state: {s1, s2, s3, s4};
   deliver: boolean;
   acknowledge: boolean;
   output_bit: boolean;
 ASSIGN
+  init(_state) := s1;
+  next(_state) := case
+                    _state = s1 & packet &  input_bit : s1;
+                    _state = s1 & packet & !input_bit : s2;
+                    _state = s2 & packet &  input_bit : s4;
+                    _state = s2 & packet & !input_bit : s3;
+                    _state = s3 & packet &  input_bit : s4;
+                    _state = s3 & packet & !input_bit : s3;
+                    _state = s4 & packet &  input_bit : s1;
+                    _state = s4 & packet & !input_bit : s2;
+                    TRUE : _state;
+                  esac;
+                    
+  init(deliver) := FALSE;
+  next(deliver) := case
+                     _state = s1 & packet & !input_bit : TRUE;
+                     _state = s2 & packet &  input_bit : TRUE;
+                     _state = s3 & packet &  input_bit : TRUE;
+                     _state = s4 & packet & !input_bit : TRUE;
+                     TRUE : FALSE;
+                   esac;
+                    
   init(acknowledge) := FALSE;
   next(acknowledge) := case
-                         packet : TRUE;
+                         _state = s1 & packet &  input_bit : TRUE;
+                         _state = s1 & packet & !input_bit : TRUE;
+                         _state = s2 & packet &  input_bit : TRUE;
+                         _state = s2 & packet & !input_bit : TRUE;
+                         _state = s3 & packet &  input_bit : TRUE;
+                         _state = s3 & packet & !input_bit : TRUE;
+                         _state = s4 & packet &  input_bit : TRUE;
+                         _state = s4 & packet & !input_bit : TRUE;
                          TRUE : FALSE;
                        esac;
 
-  deliver := acknowledge;
-
-  output_bit := input_bit;
+  init(output_bit) := FALSE;
+  next(output_bit) := case
+                        _state = s1 & packet &  input_bit : TRUE;
+                        _state = s1 & packet & !input_bit : FALSE;
+                        _state = s2 & packet &  input_bit : TRUE;
+                        _state = s2 & packet & !input_bit : FALSE;
+                        _state = s3 & packet &  input_bit : TRUE;
+                        _state = s3 & packet & !input_bit : FALSE;
+                        _state = s4 & packet &  input_bit : TRUE;
+                        _state = s4 & packet & !input_bit : FALSE;
+                        TRUE : output_bit;
+                      esac;
+  
 
 MODULE channel(input, input_bit)
 VAR
