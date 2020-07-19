@@ -18,6 +18,41 @@ LTLSPEC
   -- two `send`s cannot occur in a row without a `deliver` in between
   G (sclt.send -> X !(!rcvr.deliver U sclt.send))
 
+-- `deliver` and `done` occur in the right order
+LTLSPEC
+  -- `done` can only happen after `deliver`
+  -- rcvr.deliver R !sclt.done
+  !(!rcvr.deliver U sclt.done)
+LTLSPEC
+  -- two `deliver`s cannot occur in a row without a `done` in between
+  G (rcvr.deliver -> X !(!sclt.done U rcvr.deliver))
+
+-- Liveness
+
+LTLSPEC
+  (G F tmr.timeout) ->
+  (G F (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE)) ->
+  (G F (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE)) ->
+  (G F (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE)) ->
+  (G F (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE)) ->
+  G (sndr.send -> F rcvr.deliver)
+
+LTLSPEC
+  (G F tmr.timeout) ->
+  (G F (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE)) ->
+  (G F (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE)) ->
+  (G F (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE)) ->
+  (G F (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE)) ->
+  G (sndr.send -> F sndr.done)
+
+LTLSPEC
+  (G F tmr.timeout) ->
+  (G F (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE)) ->
+  (G F (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE)) ->
+  (G F (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE)) ->
+  (G F (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE)) ->
+  G F sndr.send
+
 MODULE timer
 VAR
   timeout: boolean;
