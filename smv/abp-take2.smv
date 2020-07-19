@@ -164,4 +164,8 @@ ASSIGN
                 TRUE : output;
               esac;
 
-  output_bit := input_bit;
+  init(output_bit) := FALSE;
+  next(output_bit) := case
+                        _state = empty & input : input_bit;
+                        TRUE : output_bit;
+                      esac;
