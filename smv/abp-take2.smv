@@ -59,7 +59,7 @@ ASSIGN
                     _state=s2 & acknowledge & !input_bit : s3;
                     _state=s2 & timeout : s2;
                     _state=s3 & send : s4;
-                    _state=s4 & acknowledge & !input_bit : s1;
+                    _state=s4 & acknowledge &  input_bit : s1;
                     _state=s4 & timeout : s4;
                     TRUE : _state;
                   esac;
