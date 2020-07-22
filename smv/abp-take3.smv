@@ -1,0 +1,220 @@
+MODULE main
+VAR
+  tmr: timer;
+  sclt: sending_client(sndr.CNF, sndr.done);
+  sndr: sender(tmr.CNF | sclt.CNF | bwdc.CNF, sclt.send, tmr.timeout, bwdc.output, bwdc.output_bit);
+  fwdc: channel(sndr.CNF, sndr.packet, sndr.output_bit);
+  rcvr: receiver(fwdc.CNF, fwdc.output, fwdc.output_bit);
+  bwdc: channel(rcvr.CNF, rcvr.acknowledge, rcvr.output_bit);
+
+-- Safety
+
+-- `send` and `deliver` occur in the right order
+LTLSPEC
+  -- `deliver` can only happen after `send`
+  -- sclt.send R !rcvr.deliver
+  !(!sclt.send U rcvr.deliver)
+LTLSPEC
+  -- two `send`s cannot occur in a row without a `deliver` in between
+  G (sclt.send -> X !(!rcvr.deliver U sclt.send))
+
+-- `deliver` and `done` occur in the right order
+LTLSPEC
+  -- `done` can only happen after `deliver`
+  -- rcvr.deliver R !sclt.done
+  !(!rcvr.deliver U sclt.done)
+LTLSPEC
+  -- two `deliver`s cannot occur in a row without a `done` in between
+  G (rcvr.deliver -> X !(!sclt.done U rcvr.deliver))
+
+-- Liveness
+
+LTLSPEC
+  (G F tmr.timeout) ->
+  (G ( (fwdc.input & fwdc.input_bit = FALSE) -> F (fwdc.output & fwdc.output_bit = FALSE))) ->
+  (G ( (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE))) ->
+  (G ( (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE))) ->
+  (G ( (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE))) ->
+  G (sndr.send -> F rcvr.deliver)
+
+LTLSPEC
+  (G F tmr.timeout) ->
+  (G ( (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE))) ->
+  (G ( (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE))) ->
+  (G ( (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE))) ->
+  (G ( (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE))) ->
+  G (sndr.send -> F sndr.done)
+
+LTLSPEC
+  (G F tmr.timeout) ->
+  (G ( (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE))) ->
+  (G ( (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE))) ->
+  (G ( (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE))) ->
+  (G ( (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE))) ->
+  G F sndr.send
+
+MODULE timer
+VAR
+  timeout: boolean;
+  CNF: boolean;
+ASSIGN
+  init(timeout) := FALSE;
+  next(timeout) := case
+                     !timeout : FALSE union TRUE;
+                     timeout : FALSE;
+                   esac;
+
+  CNF := timeout;
+
+MODULE sending_client(REQ, done)
+VAR
+  _state: {idle, awaiting};
+  send: boolean;
+  CNF: boolean;
+ASSIGN
+  init(_state) := idle;
+  next(_state) := case
+                    _state = idle : awaiting;
+                    _state = awaiting & REQ & done: idle;
+                    TRUE : _state;
+                  esac;
+
+  init(send) := FALSE;
+  next(send) := case
+                  _state = idle : TRUE;
+                  TRUE : FALSE;
+                esac;
+
+  CNF := send;
+
+MODULE sender(REQ, send, timeout, acknowledge, input_bit)
+VAR
+  _state : {s1, s2, s3, s4};
+  done: boolean;
+  packet: boolean;
+  output_bit: boolean;
+  CNF: boolean;
+ASSIGN
+  init(_state) := s1;
+  next(_state) := case
+                    _state=s1 & REQ & send : s2;
+                    _state=s2 & REQ & acknowledge & !input_bit : s3;
+                    _state=s2 & REQ & timeout : s2;
+                    _state=s3 & REQ & send : s4;
+                    _state=s4 & REQ & acknowledge &  input_bit : s1;
+                    _state=s4 & REQ & timeout : s4;
+                    TRUE : _state;
+                  esac;
+
+  init(packet) := FALSE;
+  next(packet) := case
+                    _state=s1 & REQ & send : TRUE;
+                    _state=s2 & REQ & timeout : TRUE;
+                    _state=s3 & REQ & send : TRUE;
+                    _state=s4 & REQ & timeout : TRUE;
+                    TRUE : FALSE;
+                  esac;
+
+  init(output_bit) := FALSE;
+  next(output_bit) := case
+                        _state=s2 & REQ & acknowledge & !input_bit : !output_bit;
+                        _state=s4 & REQ & acknowledge &  input_bit : !output_bit;
+                        TRUE : output_bit;
+                      esac;
+
+  init(done) := FALSE;
+  next(done) := case
+                  _state=s2 & REQ & acknowledge & !input_bit : TRUE;
+                  _state=s4 & REQ & acknowledge &  input_bit : TRUE;
+                  TRUE : FALSE;
+                esac;
+
+  CNF := packet | done;
+
+MODULE receiver(REQ, packet, input_bit)
+VAR
+  _state: {s1, s2, s3, s4};
+  deliver: boolean;
+  acknowledge: boolean;
+  output_bit: boolean;
+  CNF: boolean;
+ASSIGN
+  init(_state) := s1;
+  next(_state) := case
+                    _state = s1 & REQ & packet &  input_bit : s1;
+                    _state = s1 & REQ & packet & !input_bit : s2;
+                    _state = s2 & REQ & packet &  input_bit : s4;
+                    _state = s2 & REQ & packet & !input_bit : s3;
+                    _state = s3 & REQ & packet &  input_bit : s4;
+                    _state = s3 & REQ & packet & !input_bit : s3;
+                    _state = s4 & REQ & packet &  input_bit : s1;
+                    _state = s4 & REQ & packet & !input_bit : s2;
+                    TRUE : _state;
+                  esac;
+                    
+  init(deliver) := FALSE;
+  next(deliver) := case
+                     _state = s1 & REQ & packet & !input_bit : TRUE;
+                     _state = s2 & REQ & packet &  input_bit : TRUE;
+                     _state = s3 & REQ & packet &  input_bit : TRUE;
+                     _state = s4 & REQ & packet & !input_bit : TRUE;
+                     TRUE : FALSE;
+                   esac;
+                    
+  init(acknowledge) := FALSE;
+  next(acknowledge) := case
+                         _state = s1 & REQ & packet &  input_bit : TRUE;
+                         _state = s1 & REQ & packet & !input_bit : TRUE;
+                         _state = s2 & REQ & packet &  input_bit : TRUE;
+                         _state = s2 & REQ & packet & !input_bit : TRUE;
+                         _state = s3 & REQ & packet &  input_bit : TRUE;
+                         _state = s3 & REQ & packet & !input_bit : TRUE;
+                         _state = s4 & REQ & packet &  input_bit : TRUE;
+                         _state = s4 & REQ & packet & !input_bit : TRUE;
+                         TRUE : FALSE;
+                       esac;
+
+  init(output_bit) := FALSE;
+  next(output_bit) := case
+                        _state = s1 & REQ & packet &  input_bit : TRUE;
+                        _state = s1 & REQ & packet & !input_bit : FALSE;
+                        _state = s2 & REQ & packet &  input_bit : TRUE;
+                        _state = s2 & REQ & packet & !input_bit : FALSE;
+                        _state = s3 & REQ & packet &  input_bit : TRUE;
+                        _state = s3 & REQ & packet & !input_bit : FALSE;
+                        _state = s4 & REQ & packet &  input_bit : TRUE;
+                        _state = s4 & REQ & packet & !input_bit : FALSE;
+                        TRUE : output_bit;
+                      esac;
+
+  CNF := acknowledge | deliver;
+
+MODULE channel(REQ, input, input_bit)
+VAR
+  _state : {empty, stored, release};
+  output: boolean;
+  output_bit: boolean;
+  CNF: boolean;
+ASSIGN
+  init(_state) := empty;
+  next(_state) := case
+                   _state = empty & REQ & input : {empty, stored};
+                   _state = stored : {stored, release};
+                   _state = release : empty;
+                   TRUE : _state;
+                 esac;
+
+  init(output) := FALSE;
+  next(output) := case
+                _state = stored : TRUE;
+                _state = release : FALSE;
+                TRUE : output;
+              esac;
+
+  init(output_bit) := FALSE;
+  next(output_bit) := case
+                        _state = empty & input : input_bit;
+                        TRUE : output_bit;
+                      esac;
+
+  CNF := output;
