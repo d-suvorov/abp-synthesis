@@ -2,7 +2,7 @@ MODULE main
 VAR
   tmr: timer;
   sclt: sending_client(sndr.CNF, sndr.done);
-  sndr: sender(tmr.CNF | sclt.CNF | bwdc.CNF, sclt.send, tmr.timeout, bwdc.output, bwdc.output_bit);
+  sndr: sender(tmr.timeout | sclt.CNF | bwdc.CNF, sclt.send, tmr.timeout, bwdc.output, bwdc.output_bit);
   fwdc: channel(sndr.CNF, sndr.packet, sndr.output_bit);
   rcvr: receiver(fwdc.CNF, fwdc.output, fwdc.output_bit);
   bwdc: channel(rcvr.CNF, rcvr.acknowledge, rcvr.output_bit);
@@ -56,15 +56,12 @@ LTLSPEC
 MODULE timer
 VAR
   timeout: boolean;
-  CNF: boolean;
 ASSIGN
   init(timeout) := FALSE;
   next(timeout) := case
                      !timeout : FALSE union TRUE;
                      timeout : FALSE;
                    esac;
-
-  CNF := timeout;
 
 MODULE sending_client(REQ, done)
 VAR
