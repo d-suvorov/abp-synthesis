@@ -72,28 +72,28 @@ LTLSPEC
 -- Liveness
 
 LTLSPEC
-    (G F timer.timeout) ->
-    (G ( (fwdc.input & fwdc.input_bit = FALSE) -> F (fwdc.output & fwdc.output_bit = FALSE))) ->
-    (G ( (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE))) ->
-    (G ( (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE))) ->
-    (G ( (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE))) ->
-    G (sender.send -> F receiver.deliver)
+  (G F timer.timeout) ->
+  (G F (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE)) ->
+  (G F (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE)) ->
+  (G F (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE)) ->
+  (G F (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE)) ->
+  G (sender.send -> F receiver.deliver)
 
 LTLSPEC
-    (G F timer.timeout) ->
-    (G ( (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE))) ->
-    (G ( (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE))) ->
-    (G ( (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE))) ->
-    (G ( (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE))) ->
-    G (sender.send -> F sender.done)
+  (G F timer.timeout) ->
+  (G F (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE)) ->
+  (G F (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE)) ->
+  (G F (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE)) ->
+  (G F (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE)) ->
+  G (sender.send -> F sender.done)
 
 LTLSPEC
-    (G F timer.timeout) ->
-    (G ( (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE))) ->
-    (G ( (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE))) ->
-    (G ( (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE))) ->
-    (G ( (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE))) ->
-    G F sender.send
+  (G F timer.timeout) ->
+  (G F (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE)) ->
+  (G F (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE)) ->
+  (G F (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE)) ->
+  (G F (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE)) ->
+  G F sender.send
 
 
 MODULE timer
