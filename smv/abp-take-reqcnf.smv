@@ -1,28 +1,28 @@
 MODULE main
 VAR
-    timer: timer;
-    client: sending_client(
+    timer: Timer;
+    client: Client(
         client$done
     );
-    sender: sender(
+    sender: Sender(
         sender$REQ,
         sender$send,
         sender$timeout,
         sender$acknowledge,
         sender$input_bit
     );
-    receiver: receiver(
+    receiver: Receiver(
         receiver$REQ,
         receiver$packet,
         receiver$input_bit
     );
-    fwdc: channel(
-        fwdc$input,
-        fwdc$input_bit
+    forward: Channel(
+        forward$input,
+        forward$input_bit
     );
-    bwdc: channel(
-        bwdc$input,
-        bwdc$input_bit
+    backward: Channel(
+        backward$input,
+        backward$input_bit
     );
 DEFINE
     -- Client input variables
@@ -32,21 +32,21 @@ DEFINE
     sender$REQ := sender$send | sender$timeout | sender$acknowledge;
     sender$send := client.send;
     sender$timeout := timer.timeout;
-    sender$acknowledge := bwdc.output;
-    sender$input_bit := bwdc.output_bit;
+    sender$acknowledge := backward.output;
+    sender$input_bit := backward.output_bit;
 
     -- Receiver input variables
     receiver$REQ := receiver$packet;
-    receiver$packet := fwdc.output;
-    receiver$input_bit := fwdc.output_bit;
+    receiver$packet := forward.output;
+    receiver$input_bit := forward.output_bit;
 
     -- Forward channel input variables
-    fwdc$input := sender.CNF & sender.packet;
-    fwdc$input_bit := sender.output_bit;
+    forward$input := sender.CNF & sender.packet;
+    forward$input_bit := sender.output_bit;
 
     -- Backward channel input variables
-    bwdc$input := receiver.CNF & receiver.acknowledge;
-    bwdc$input_bit := receiver.output_bit;
+    backward$input := receiver.CNF & receiver.acknowledge;
+    backward$input_bit := receiver.output_bit;
 
 
 -- Safety
@@ -73,30 +73,30 @@ LTLSPEC
 
 LTLSPEC
   (G F timer.timeout) ->
-  (G F (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE)) ->
-  (G F (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE)) ->
-  (G F (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE)) ->
-  (G F (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE)) ->
+  (G F (forward.input & forward.input_bit = FALSE) -> G F (forward.output & forward.output_bit = FALSE)) ->
+  (G F (forward.input & forward.input_bit = TRUE) -> G F (forward.output & forward.output_bit = TRUE)) ->
+  (G F (backward.input & backward.input_bit = FALSE) -> G F (backward.output & backward.output_bit = FALSE)) ->
+  (G F (backward.input & backward.input_bit = TRUE) -> G F (backward.output & backward.output_bit = TRUE)) ->
   G (sender.send -> F receiver.deliver)
 
 LTLSPEC
   (G F timer.timeout) ->
-  (G F (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE)) ->
-  (G F (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE)) ->
-  (G F (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE)) ->
-  (G F (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE)) ->
+  (G F (forward.input & forward.input_bit = FALSE) -> G F (forward.output & forward.output_bit = FALSE)) ->
+  (G F (forward.input & forward.input_bit = TRUE) -> G F (forward.output & forward.output_bit = TRUE)) ->
+  (G F (backward.input & backward.input_bit = FALSE) -> G F (backward.output & backward.output_bit = FALSE)) ->
+  (G F (backward.input & backward.input_bit = TRUE) -> G F (backward.output & backward.output_bit = TRUE)) ->
   G (sender.send -> F sender.done)
 
 LTLSPEC
   (G F timer.timeout) ->
-  (G F (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE)) ->
-  (G F (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE)) ->
-  (G F (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE)) ->
-  (G F (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE)) ->
+  (G F (forward.input & forward.input_bit = FALSE) -> G F (forward.output & forward.output_bit = FALSE)) ->
+  (G F (forward.input & forward.input_bit = TRUE) -> G F (forward.output & forward.output_bit = TRUE)) ->
+  (G F (backward.input & backward.input_bit = FALSE) -> G F (backward.output & backward.output_bit = FALSE)) ->
+  (G F (backward.input & backward.input_bit = TRUE) -> G F (backward.output & backward.output_bit = TRUE)) ->
   G F sender.send
 
 
-MODULE timer
+MODULE Timer
 VAR
     timeout: boolean;
 ASSIGN
@@ -107,7 +107,7 @@ ASSIGN
     esac;
 
 
-MODULE sending_client(done)
+MODULE Client(done)
 VAR
     _state: {idle, awaiting};
     send: boolean;
@@ -126,7 +126,7 @@ VAR
     esac;
 
 
-MODULE sender(REQ, send, timeout, acknowledge, input_bit)
+MODULE Sender(REQ, send, timeout, acknowledge, input_bit)
 VAR
     _state : {s1, s2, s3, s4};
     done: boolean;
@@ -176,7 +176,7 @@ ASSIGN
     esac;
 
 
-MODULE receiver(REQ, packet, input_bit)
+MODULE Receiver(REQ, packet, input_bit)
 VAR
     _state: {s1, s2, s3, s4};
     deliver: boolean;
@@ -242,7 +242,7 @@ ASSIGN
     esac;
 
 
-MODULE channel(input, input_bit)
+MODULE Channel(input, input_bit)
 VAR
     _state : {empty, stored, release};
     output: boolean;
