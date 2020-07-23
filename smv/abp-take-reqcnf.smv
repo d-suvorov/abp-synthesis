@@ -155,10 +155,12 @@ ASSIGN
     init(packet) := FALSE;
     next(packet) := case
         guard_s1_s2 : TRUE;
+        guard_s2_s3 : FALSE;
         guard_s2_s2 : TRUE;
         guard_s3_s4 : TRUE;
+        guard_s4_s1 : FALSE;
         guard_s4_s4 : TRUE;
-        TRUE : FALSE;
+        TRUE : packet;
     esac;
 
     init(output_bit) := FALSE;
@@ -170,19 +172,23 @@ ASSIGN
 
     init(done) := FALSE;
     next(done) := case
+        guard_s1_s2 : FALSE;
         guard_s2_s3 : TRUE;
+        guard_s2_s2 : FALSE;
+        guard_s3_s4 : FALSE;
         guard_s4_s1 : TRUE;
-        TRUE : FALSE;
+        guard_s4_s4 : FALSE;
+        TRUE : done;
     esac;
 
     init(CNF) := FALSE;
     next(CNF) := case
         guard_s1_s2 : TRUE;
+        guard_s2_s3 : TRUE;
         guard_s2_s2 : TRUE;
         guard_s3_s4 : TRUE;
-        guard_s4_s4 : TRUE;
-        guard_s2_s3 : TRUE;
         guard_s4_s1 : TRUE;
+        guard_s4_s4 : TRUE;
         TRUE : FALSE;
     esac;
 
@@ -250,7 +256,7 @@ ASSIGN
         guard_s4_s2 : FALSE;
         TRUE : output_bit;
     esac;
-                        
+
     init(CNF) := FALSE;
     next(CNF) := case
         guard_s1_s1 : TRUE;
