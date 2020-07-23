@@ -53,204 +53,218 @@ DEFINE
 
 -- `send` and `deliver` occur in the right order
 LTLSPEC
-  -- `deliver` can only happen after `send`
-  -- client.send R !receiver.deliver
-  !(!client.send U receiver.deliver)
+    -- `deliver` can only happen after `send`
+    -- client.send R !receiver.deliver
+    !(!client.send U receiver.deliver)
 LTLSPEC
-  -- two `send`s cannot occur in a row without a `deliver` in between
-  G (client.send -> X !(!receiver.deliver U client.send))
+    -- two `send`s cannot occur in a row without a `deliver` in between
+    G (client.send -> X !(!receiver.deliver U client.send))
 
 -- `deliver` and `done` occur in the right order
 LTLSPEC
-  -- `done` can only happen after `deliver`
-  -- receiver.deliver R !client.done
-  !(!receiver.deliver U client.done)
+    -- `done` can only happen after `deliver`
+    -- receiver.deliver R !client.done
+    !(!receiver.deliver U client.done)
 LTLSPEC
-  -- two `deliver`s cannot occur in a row without a `done` in between
-  G (receiver.deliver -> X !(!client.done U receiver.deliver))
+    -- two `deliver`s cannot occur in a row without a `done` in between
+    G (receiver.deliver -> X !(!client.done U receiver.deliver))
 
 -- Liveness
 
 LTLSPEC
-  (G F timer.timeout) ->
-  (G ( (fwdc.input & fwdc.input_bit = FALSE) -> F (fwdc.output & fwdc.output_bit = FALSE))) ->
-  (G ( (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE))) ->
-  (G ( (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE))) ->
-  (G ( (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE))) ->
-  G (sender.send -> F receiver.deliver)
+    (G F timer.timeout) ->
+    (G ( (fwdc.input & fwdc.input_bit = FALSE) -> F (fwdc.output & fwdc.output_bit = FALSE))) ->
+    (G ( (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE))) ->
+    (G ( (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE))) ->
+    (G ( (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE))) ->
+    G (sender.send -> F receiver.deliver)
 
 LTLSPEC
-  (G F timer.timeout) ->
-  (G ( (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE))) ->
-  (G ( (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE))) ->
-  (G ( (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE))) ->
-  (G ( (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE))) ->
-  G (sender.send -> F sender.done)
+    (G F timer.timeout) ->
+    (G ( (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE))) ->
+    (G ( (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE))) ->
+    (G ( (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE))) ->
+    (G ( (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE))) ->
+    G (sender.send -> F sender.done)
 
 LTLSPEC
-  (G F timer.timeout) ->
-  (G ( (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE))) ->
-  (G ( (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE))) ->
-  (G ( (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE))) ->
-  (G ( (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE))) ->
-  G F sender.send
+    (G F timer.timeout) ->
+    (G ( (fwdc.input & fwdc.input_bit = FALSE) -> G F (fwdc.output & fwdc.output_bit = FALSE))) ->
+    (G ( (fwdc.input & fwdc.input_bit = TRUE) -> G F (fwdc.output & fwdc.output_bit = TRUE))) ->
+    (G ( (bwdc.input & bwdc.input_bit = FALSE) -> G F (bwdc.output & bwdc.output_bit = FALSE))) ->
+    (G ( (bwdc.input & bwdc.input_bit = TRUE) -> G F (bwdc.output & bwdc.output_bit = TRUE))) ->
+    G F sender.send
 
 
 MODULE timer
 VAR
-  timeout: boolean;
+    timeout: boolean;
 ASSIGN
-  init(timeout) := FALSE;
-  next(timeout) := case
-                     !timeout : FALSE union TRUE;
-                     timeout : FALSE;
-                   esac;
+    init(timeout) := FALSE;
+    next(timeout) := case
+        !timeout : {FALSE, TRUE};
+        timeout : FALSE;
+    esac;
 
 
 MODULE sending_client(done)
 VAR
-  _state: {idle, awaiting};
-  send: boolean;
-ASSIGN
-  init(_state) := idle;
-  next(_state) := case
-                    _state = idle : awaiting;
-                    _state = awaiting & done: idle;
-                    TRUE : _state;
-                  esac;
+    _state: {idle, awaiting};
+    send: boolean;
+    ASSIGN
+    init(_state) := idle;
+    next(_state) := case
+        _state = idle : awaiting;
+        _state = awaiting & done: idle;
+        TRUE : _state;
+    esac;
 
-  init(send) := FALSE;
-  next(send) := case
-                  _state = idle : TRUE;
-                  TRUE : FALSE;
-                esac;
+    init(send) := FALSE;
+    next(send) := case
+        _state = idle : TRUE;
+        TRUE : FALSE;
+    esac;
 
 
 MODULE sender(REQ, send, timeout, acknowledge, input_bit)
 VAR
-  _state : {s1, s2, s3, s4};
-  done: boolean;
-  packet: boolean;
-  output_bit: boolean;
+    _state : {s1, s2, s3, s4};
+    done: boolean;
+    packet: boolean;
+    output_bit: boolean;
 DEFINE
-  CNF := packet | done; -- TODO: change to a proper "case"
+    CNF := packet | done; -- TODO: change to a proper "case"
+    guard_s1_s2 := _state=s1 & REQ & send;
+    guard_s2_s3 := _state=s2 & REQ & acknowledge & !input_bit;
+    guard_s2_s2 := _state=s2 & REQ & timeout;
+    guard_s3_s4 := _state=s3 & REQ & send;
+    guard_s4_s1 := _state=s4 & REQ & acknowledge &  input_bit;
+    guard_s4_s4 := _state=s4 & REQ & timeout;
 ASSIGN
-  init(_state) := s1;
-  next(_state) := case
-                    _state=s1 & REQ & send : s2;
-                    _state=s2 & REQ & acknowledge & !input_bit : s3;
-                    _state=s2 & REQ & timeout : s2;
-                    _state=s3 & REQ & send : s4;
-                    _state=s4 & REQ & acknowledge &  input_bit : s1;
-                    _state=s4 & REQ & timeout : s4;
-                    TRUE : _state;
-                  esac;
+    init(_state) := s1;
+    next(_state) := case
+        guard_s1_s2 : s2;
+        guard_s2_s3 : s3;
+        guard_s2_s2 : s2;
+        guard_s3_s4 : s4;
+        guard_s4_s1 : s1;
+        guard_s4_s4 : s4;
+        TRUE : _state;
+    esac;
 
-  init(packet) := FALSE;
-  next(packet) := case
-                    _state=s1 & REQ & send : TRUE;
-                    _state=s2 & REQ & timeout : TRUE;
-                    _state=s3 & REQ & send : TRUE;
-                    _state=s4 & REQ & timeout : TRUE;
-                    TRUE : FALSE;
-                  esac;
+    init(packet) := FALSE;
+    next(packet) := case
+        guard_s1_s2 : TRUE;
+        guard_s2_s2 : TRUE;
+        guard_s3_s4 : TRUE;
+        guard_s4_s4 : TRUE;
+        TRUE : FALSE;
+    esac;
 
-  init(output_bit) := FALSE;
-  next(output_bit) := case
-                        _state=s2 & REQ & acknowledge & !input_bit : !output_bit;
-                        _state=s4 & REQ & acknowledge &  input_bit : !output_bit;
-                        TRUE : output_bit;
-                      esac;
+    init(output_bit) := FALSE;
+    next(output_bit) := case
+        guard_s2_s3 : !output_bit; -- TRUE
+        guard_s4_s1 : !output_bit; -- FALSE
+        TRUE : output_bit;
+    esac;
 
-  init(done) := FALSE;
-  next(done) := case
-                  _state=s2 & REQ & acknowledge & !input_bit : TRUE;
-                  _state=s4 & REQ & acknowledge &  input_bit : TRUE;
-                  TRUE : FALSE;
-                esac;
+    init(done) := FALSE;
+    next(done) := case
+        guard_s2_s3 : TRUE;
+        guard_s4_s1 : TRUE;
+        TRUE : FALSE;
+    esac;
 
 
 MODULE receiver(REQ, packet, input_bit)
 VAR
-  _state: {s1, s2, s3, s4};
-  deliver: boolean;
-  acknowledge: boolean;
-  output_bit: boolean;
+    _state: {s1, s2, s3, s4};
+    deliver: boolean;
+    acknowledge: boolean;
+    output_bit: boolean;
 DEFINE
-  CNF := acknowledge | deliver; -- TODO: change to a proper "case"
+    CNF := acknowledge | deliver; -- TODO: change to a proper "case"
+    guard_s1_s1 := _state = s1 & REQ & packet &  input_bit;
+    guard_s1_s2 := _state = s1 & REQ & packet & !input_bit;
+    guard_s2_s4 := _state = s2 & REQ & packet &  input_bit;
+    guard_s2_s3 := _state = s2 & REQ & packet & !input_bit;
+    guard_s3_s4 := _state = s3 & REQ & packet &  input_bit;
+    guard_s3_s3 := _state = s3 & REQ & packet & !input_bit;
+    guard_s4_s1 := _state = s4 & REQ & packet &  input_bit;
+    guard_s4_s2 := _state = s4 & REQ & packet & !input_bit;
 ASSIGN
-  init(_state) := s1;
-  next(_state) := case
-                    _state = s1 & REQ & packet &  input_bit : s1;
-                    _state = s1 & REQ & packet & !input_bit : s2;
-                    _state = s2 & REQ & packet &  input_bit : s4;
-                    _state = s2 & REQ & packet & !input_bit : s3;
-                    _state = s3 & REQ & packet &  input_bit : s4;
-                    _state = s3 & REQ & packet & !input_bit : s3;
-                    _state = s4 & REQ & packet &  input_bit : s1;
-                    _state = s4 & REQ & packet & !input_bit : s2;
-                    TRUE : _state;
-                  esac;
+    init(_state) := s1;
+    next(_state) := case
+        guard_s1_s1 : s1;
+        guard_s1_s2 : s2;
+        guard_s2_s4 : s4;
+        guard_s2_s3 : s3;
+        guard_s3_s4 : s4;
+        guard_s3_s3 : s3;
+        guard_s4_s1 : s1;
+        guard_s4_s2 : s2;
+        TRUE : _state;
+    esac;
 
-  init(deliver) := FALSE;
-  next(deliver) := case
-                     _state = s1 & REQ & packet & !input_bit : TRUE;
-                     _state = s2 & REQ & packet &  input_bit : TRUE;
-                     _state = s3 & REQ & packet &  input_bit : TRUE;
-                     _state = s4 & REQ & packet & !input_bit : TRUE;
-                     TRUE : FALSE;
-                   esac;
+    init(deliver) := FALSE;
+    next(deliver) := case
+        guard_s1_s2 : TRUE;
+        guard_s2_s4 : TRUE;
+        guard_s3_s4 : TRUE;
+        guard_s4_s2 : TRUE;
+        TRUE : FALSE;
+    esac;
 
-  init(acknowledge) := FALSE;
-  next(acknowledge) := case
-                         _state = s1 & REQ & packet &  input_bit : TRUE;
-                         _state = s1 & REQ & packet & !input_bit : TRUE;
-                         _state = s2 & REQ & packet &  input_bit : TRUE;
-                         _state = s2 & REQ & packet & !input_bit : TRUE;
-                         _state = s3 & REQ & packet &  input_bit : TRUE;
-                         _state = s3 & REQ & packet & !input_bit : TRUE;
-                         _state = s4 & REQ & packet &  input_bit : TRUE;
-                         _state = s4 & REQ & packet & !input_bit : TRUE;
-                         TRUE : FALSE;
-                       esac;
+    init(acknowledge) := FALSE;
+    next(acknowledge) := case
+        guard_s1_s1 : TRUE;
+        guard_s1_s2 : TRUE;
+        guard_s2_s4 : TRUE;
+        guard_s2_s3 : TRUE;
+        guard_s3_s4 : TRUE;
+        guard_s3_s3 : TRUE;
+        guard_s4_s1 : TRUE;
+        guard_s4_s2 : TRUE;
+        TRUE : FALSE;
+     esac;
 
-  init(output_bit) := FALSE;
-  next(output_bit) := case
-                        _state = s1 & REQ & packet &  input_bit : TRUE;
-                        _state = s1 & REQ & packet & !input_bit : FALSE;
-                        _state = s2 & REQ & packet &  input_bit : TRUE;
-                        _state = s2 & REQ & packet & !input_bit : FALSE;
-                        _state = s3 & REQ & packet &  input_bit : TRUE;
-                        _state = s3 & REQ & packet & !input_bit : FALSE;
-                        _state = s4 & REQ & packet &  input_bit : TRUE;
-                        _state = s4 & REQ & packet & !input_bit : FALSE;
-                        TRUE : output_bit;
-                      esac;
+    init(output_bit) := FALSE;
+    next(output_bit) := case
+        guard_s1_s1 : TRUE;
+        guard_s1_s2 : FALSE;
+        guard_s2_s4 : TRUE;
+        guard_s2_s3 : FALSE;
+        guard_s3_s4 : TRUE;
+        guard_s3_s3 : FALSE;
+        guard_s4_s1 : TRUE;
+        guard_s4_s2 : FALSE;
+        TRUE : output_bit;
+    esac;
 
 
 MODULE channel(input, input_bit)
 VAR
-  _state : {empty, stored, release};
-  output: boolean;
-  output_bit: boolean;
+    _state : {empty, stored, release};
+    output: boolean;
+    output_bit: boolean;
 ASSIGN
-  init(_state) := empty;
-  next(_state) := case
-                   _state = empty & input : {empty, stored};
-                   _state = stored : {stored, release};
-                   _state = release : empty;
-                   TRUE : _state;
-                 esac;
+    init(_state) := empty;
+    next(_state) := case
+        _state = empty & input : {empty, stored};
+        _state = stored : {stored, release};
+        _state = release : empty;
+        TRUE : _state;
+    esac;
 
-  init(output) := FALSE;
-  next(output) := case
-                _state = stored : TRUE;
-                _state = release : FALSE;
-                TRUE : output;
-              esac;
+    init(output) := FALSE;
+    next(output) := case
+        _state = stored : TRUE;
+        _state = release : FALSE;
+        TRUE : output;
+    esac;
 
-  init(output_bit) := FALSE;
-  next(output_bit) := case
-                        _state = empty & input : input_bit;
-                        TRUE : output_bit;
-                      esac;
+    init(output_bit) := FALSE;
+    next(output_bit) := case
+        _state = empty & input : input_bit;
+        TRUE : output_bit;
+    esac;
