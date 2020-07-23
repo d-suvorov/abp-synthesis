@@ -132,8 +132,8 @@ VAR
     done: boolean;
     packet: boolean;
     output_bit: boolean;
+    CNF: boolean;
 DEFINE
-    CNF := packet | done; -- TODO: change to a proper "case"
     guard_s1_s2 := _state=s1 & REQ & send;
     guard_s2_s3 := _state=s2 & REQ & acknowledge & !input_bit;
     guard_s2_s2 := _state=s2 & REQ & timeout;
@@ -175,6 +175,16 @@ ASSIGN
         TRUE : FALSE;
     esac;
 
+    init(CNF) := FALSE;
+    next(CNF) := case
+        guard_s1_s2 : TRUE;
+        guard_s2_s2 : TRUE;
+        guard_s3_s4 : TRUE;
+        guard_s4_s4 : TRUE;
+        guard_s2_s3 : TRUE;
+        guard_s4_s1 : TRUE;
+        TRUE : FALSE;
+    esac;
 
 MODULE Receiver(REQ, packet, input_bit)
 VAR
@@ -182,8 +192,8 @@ VAR
     deliver: boolean;
     acknowledge: boolean;
     output_bit: boolean;
+    CNF: boolean;
 DEFINE
-    CNF := acknowledge | deliver; -- TODO: change to a proper "case"
     guard_s1_s1 := _state = s1 & REQ & packet &  input_bit;
     guard_s1_s2 := _state = s1 & REQ & packet & !input_bit;
     guard_s2_s4 := _state = s2 & REQ & packet &  input_bit;
@@ -226,7 +236,7 @@ ASSIGN
         guard_s4_s1 : TRUE;
         guard_s4_s2 : TRUE;
         TRUE : FALSE;
-     esac;
+    esac;
 
     init(output_bit) := FALSE;
     next(output_bit) := case
@@ -239,6 +249,19 @@ ASSIGN
         guard_s4_s1 : TRUE;
         guard_s4_s2 : FALSE;
         TRUE : output_bit;
+    esac;
+                        
+    init(CNF) := FALSE;
+    next(CNF) := case
+        guard_s1_s1 : TRUE;
+        guard_s1_s2 : TRUE;
+        guard_s2_s4 : TRUE;
+        guard_s2_s3 : TRUE;
+        guard_s3_s4 : TRUE;
+        guard_s3_s3 : TRUE;
+        guard_s4_s1 : TRUE;
+        guard_s4_s2 : TRUE;
+        TRUE : FALSE;
     esac;
 
 
