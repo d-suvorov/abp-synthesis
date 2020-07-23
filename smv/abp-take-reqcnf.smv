@@ -48,52 +48,56 @@ DEFINE
     backward$input := receiver.CNF & receiver.acknowledge;
     backward$input_bit := receiver.output_bit;
 
+    -- LTL spec defines
+    ltl_send := client.send;
+    ltl_deliver := receiver.CNF & receiver.deliver;
+    ltl_done := client.done;
 
 -- Safety
 
 -- `send` and `deliver` occur in the right order
 LTLSPEC
     -- `deliver` can only happen after `send`
-    -- client.send R !receiver.deliver
-    !(!client.send U receiver.deliver)
+    -- ltl_send R !ltl_deliver
+    !(!ltl_send U ltl_deliver)
 LTLSPEC
     -- two `send`s cannot occur in a row without a `deliver` in between
-    G (client.send -> X !(!receiver.deliver U client.send))
+    G (ltl_send -> X !(!ltl_deliver U ltl_send))
 
 -- `deliver` and `done` occur in the right order
 LTLSPEC
     -- `done` can only happen after `deliver`
-    -- receiver.deliver R !client.done
-    !(!receiver.deliver U client.done)
+    -- ltl_deliver R !ltl_done
+    !(!ltl_deliver U ltl_done)
 LTLSPEC
     -- two `deliver`s cannot occur in a row without a `done` in between
-    G (receiver.deliver -> X !(!client.done U receiver.deliver))
+    G (ltl_deliver -> X !(!ltl_done U ltl_deliver))
 
 -- Liveness
 
 LTLSPEC
-  (G F timer.timeout) ->
-  (G F (forward.input & forward.input_bit = FALSE) -> G F (forward.output & forward.output_bit = FALSE)) ->
-  (G F (forward.input & forward.input_bit = TRUE) -> G F (forward.output & forward.output_bit = TRUE)) ->
-  (G F (backward.input & backward.input_bit = FALSE) -> G F (backward.output & backward.output_bit = FALSE)) ->
-  (G F (backward.input & backward.input_bit = TRUE) -> G F (backward.output & backward.output_bit = TRUE)) ->
-  G (sender.send -> F receiver.deliver)
+    (G F timer.timeout) ->
+    (G F (forward.input & forward.input_bit = FALSE) -> G F (forward.output & forward.output_bit = FALSE)) ->
+    (G F (forward.input & forward.input_bit = TRUE) -> G F (forward.output & forward.output_bit = TRUE)) ->
+    (G F (backward.input & backward.input_bit = FALSE) -> G F (backward.output & backward.output_bit = FALSE)) ->
+    (G F (backward.input & backward.input_bit = TRUE) -> G F (backward.output & backward.output_bit = TRUE)) ->
+    G (ltl_send -> F ltl_deliver)
 
 LTLSPEC
-  (G F timer.timeout) ->
-  (G F (forward.input & forward.input_bit = FALSE) -> G F (forward.output & forward.output_bit = FALSE)) ->
-  (G F (forward.input & forward.input_bit = TRUE) -> G F (forward.output & forward.output_bit = TRUE)) ->
-  (G F (backward.input & backward.input_bit = FALSE) -> G F (backward.output & backward.output_bit = FALSE)) ->
-  (G F (backward.input & backward.input_bit = TRUE) -> G F (backward.output & backward.output_bit = TRUE)) ->
-  G (sender.send -> F sender.done)
+    (G F timer.timeout) ->
+    (G F (forward.input & forward.input_bit = FALSE) -> G F (forward.output & forward.output_bit = FALSE)) ->
+    (G F (forward.input & forward.input_bit = TRUE) -> G F (forward.output & forward.output_bit = TRUE)) ->
+    (G F (backward.input & backward.input_bit = FALSE) -> G F (backward.output & backward.output_bit = FALSE)) ->
+    (G F (backward.input & backward.input_bit = TRUE) -> G F (backward.output & backward.output_bit = TRUE)) ->
+    G (ltl_send -> F ltl_done)
 
 LTLSPEC
-  (G F timer.timeout) ->
-  (G F (forward.input & forward.input_bit = FALSE) -> G F (forward.output & forward.output_bit = FALSE)) ->
-  (G F (forward.input & forward.input_bit = TRUE) -> G F (forward.output & forward.output_bit = TRUE)) ->
-  (G F (backward.input & backward.input_bit = FALSE) -> G F (backward.output & backward.output_bit = FALSE)) ->
-  (G F (backward.input & backward.input_bit = TRUE) -> G F (backward.output & backward.output_bit = TRUE)) ->
-  G F sender.send
+    (G F timer.timeout) ->
+    (G F (forward.input & forward.input_bit = FALSE) -> G F (forward.output & forward.output_bit = FALSE)) ->
+    (G F (forward.input & forward.input_bit = TRUE) -> G F (forward.output & forward.output_bit = TRUE)) ->
+    (G F (backward.input & backward.input_bit = FALSE) -> G F (backward.output & backward.output_bit = FALSE)) ->
+    (G F (backward.input & backward.input_bit = TRUE) -> G F (backward.output & backward.output_bit = TRUE)) ->
+    G F ltl_send
 
 
 MODULE Timer
@@ -224,11 +228,15 @@ ASSIGN
 
     init(deliver) := FALSE;
     next(deliver) := case
+        guard_s1_s1 : FALSE;
         guard_s1_s2 : TRUE;
         guard_s2_s4 : TRUE;
+        guard_s2_s3 : FALSE;
         guard_s3_s4 : TRUE;
+        guard_s3_s3 : FALSE;
+        guard_s4_s1 : FALSE;
         guard_s4_s2 : TRUE;
-        TRUE : FALSE;
+        TRUE : deliver;
     esac;
 
     init(acknowledge) := FALSE;
@@ -241,7 +249,7 @@ ASSIGN
         guard_s3_s3 : TRUE;
         guard_s4_s1 : TRUE;
         guard_s4_s2 : TRUE;
-        TRUE : FALSE;
+        TRUE : acknowledge;
     esac;
 
     init(output_bit) := FALSE;
