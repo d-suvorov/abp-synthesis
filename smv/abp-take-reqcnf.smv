@@ -73,6 +73,13 @@ LTLSPEC
     -- two `deliver`s cannot occur in a row without a `done` in between
     G (ltl_deliver -> X !(!ltl_done U ltl_deliver))
 
+-- FB constraints
+LTLSPEC
+    G (!next(sender.CNF) -> sender.output_bit = next(sender.output_bit) & sender.packet = next(sender.packet) & sender.done = next(sender.done))
+
+LTLSPEC
+    G (!next(receiver.CNF) -> receiver.output_bit = next(receiver.output_bit) & receiver.acknowledge = next(receiver.acknowledge) & receiver.deliver = next(receiver.deliver))
+  
 -- Liveness
 
 LTLSPEC
